@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>화해</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif; background: #eee; display: flex; justify-content: center; }
+#app { width: 375px; min-height: 100vh; background: #fff; position: relative; }
+
+.screen { display: none; flex-direction: column; background: #fff; min-height: 100vh; }
+.screen.active { display: flex; }
+
+/* BOTTOM NAV */
+.bnav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 375px; background: #fff; border-top: 1px solid #e8e8e8; display: flex; z-index: 200; padding-bottom: env(safe-area-inset-bottom, 0); }
+.bnav button { flex: 1; padding: 8px 2px 10px; background: none; border: none; cursor: pointer; font-size: 10px; color: #aaa; display: flex; flex-direction: column; align-items: center; gap: 3px; font-weight: 400; letter-spacing: -0.2px; }
+.bnav button svg { width: 24px; height: 24px; stroke: #aaa; fill: none; stroke-width: 1.8; }
+.bnav button.on { color: #1a1a1a; font-weight: 600; }
+.bnav button.on svg { stroke: #1a1a1a; }
+
+/* HEADER */
+.hdr { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 12px; border-bottom: 1px solid #f0f0f0; background: #fff; }
+.hdr h1 { font-size: 17px; font-weight: 700; flex: 1; text-align: center; }
+.back { background: none; border: none; font-size: 22px; cursor: pointer; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; }
+
+/* TOAST */
+.toast { position: fixed; bottom: 75px; left: 50%; transform: translateX(-50%); background: rgba(20,20,20,.88); color: #fff; padding: 11px 16px; border-radius: 8px; font-size: 13px; z-index: 500; display: none; align-items: center; gap: 10px; white-space: nowrap; }
+.toast.show { display: flex; }
+.toast-link { color: #4dd9c8; background: none; border: none; font-size: 13px; font-weight: 700; cursor: pointer; padding: 0; }
+.toast2 { position: fixed; bottom: 75px; left: 50%; transform: translateX(-50%); background: rgba(20,20,20,.88); color: #fff; padding: 11px 20px; border-radius: 8px; font-size: 13px; z-index: 500; display: none; }
+.toast2.show { display: block; }
+
+/* =============== HOME =============== */
+#home { overflow-y: auto; padding-bottom: 60px; }
+.home-topbar { display: flex; align-items: center; gap: 10px; padding: 10px 16px 6px; }
+.home-topbar .searchbar { flex: 1; background: #f5f5f5; border-radius: 20px; padding: 8px 14px; font-size: 12px; color: #aaa; }
+.home-tabs { display: flex; gap: 22px; padding: 0 16px; border-bottom: 1px solid #eee; }
+.htab { padding: 10px 0; font-size: 14px; color: #aaa; border-bottom: 2px solid transparent; cursor: pointer; }
+.htab.on { color: #222; font-weight: 700; border-bottom-color: #222; }
+.banner { background: linear-gradient(135deg, #dbedff 0%, #afd3f7 100%); margin: 12px 16px; border-radius: 14px; padding: 20px; display: flex; justify-content: space-between; align-items: center; min-height: 148px; position: relative; }
+.banner-txt .badge { background: #ff3b30; color: #fff; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 20px; display: inline-block; margin-bottom: 8px; }
+.banner-txt h2 { font-size: 16px; font-weight: 900; color: #183550; line-height: 1.5; }
+.banner-bottles { display: flex; gap: 5px; align-items: flex-end; }
+.btl { background: linear-gradient(180deg,#e4f0ff,#8fc3ef); border-radius: 6px 6px 4px 4px; border: 1px solid #b8d9f5; }
+.banner-page { position: absolute; top: 10px; right: 12px; background: rgba(0,0,0,.28); color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 10px; }
+.sec-hdr { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px 6px; }
+.sec-hdr span { font-size: 13px; font-weight: 700; }
+.sec-hdr small { font-size: 11px; color: #aaa; }
+.cat-row { display: flex; gap: 6px; padding: 4px 16px 10px; overflow-x: auto; scrollbar-width: none; }
+.cat-row::-webkit-scrollbar { display: none; }
+.cpill { padding: 6px 14px; border-radius: 20px; border: 1px solid #ddd; font-size: 12px; white-space: nowrap; cursor: pointer; color: #666; }
+.cpill.on { background: #222; color: #fff; border-color: #222; }
+.rank-list { padding: 0 16px; }
+.ri { display: flex; align-items: center; gap: 10px; padding: 12px 0; border-bottom: 1px solid #f5f5f5; cursor: pointer; }
+.ri:active { background: #fafafa; margin: 0 -16px; padding-left: 16px; padding-right: 16px; }
+.rnum { font-size: 20px; font-weight: 900; width: 22px; flex-shrink: 0; }
+.rnum.g { color: #e8960c; } .rnum.s { color: #8a9ba8; } .rnum.b { color: #b8612a; }
+.rthumb { width: 58px; height: 58px; border-radius: 8px; flex-shrink: 0; overflow: hidden; background: #eef5ff; }
+.rthumb img { width: 100%; height: 100%; object-fit: cover; object-position: center 18%; }
+.rinfo .rbrand { font-size: 11px; color: #999; }
+.rinfo .rname { font-size: 13px; font-weight: 600; line-height: 1.4; margin: 2px 0; }
+.rinfo .rstars { font-size: 11px; color: #f39c12; }
+.rinfo .rprice { font-size: 13px; font-weight: 700; }
+.rinfo .rprice .dc { color: #ff3b30; margin-right: 3px; }
+.new-tag { background: #00bfa5; color: #fff; font-size: 9px; font-weight: 700; padding: 1px 4px; border-radius: 3px; vertical-align: middle; margin-left: 3px; }
+
+/* =============== COMPARE LIST =============== */
+#compare-list { overflow-y: auto; padding-bottom: 60px; }
+.cl-wrap { padding: 20px 16px; }
+.cl-wrap h2 { font-size: 20px; font-weight: 800; margin-bottom: 20px; }
+.ccard { border: 1px solid #e0e0e0; border-radius: 14px; padding: 16px; margin-bottom: 12px; cursor: pointer; }
+.ccard:active { background: #fafafa; }
+.ccard-title { font-size: 14px; font-weight: 700; margin-bottom: 12px; }
+.ccard-imgs { display: flex; gap: 8px; align-items: center; }
+.cthumb { width: 52px; height: 62px; border-radius: 6px; overflow: hidden; background: #eef5ff; }
+.cthumb img { width: 100%; height: 100%; object-fit: cover; object-position: center 18%; }
+.new-cmp-btn { border: 1.5px dashed #ccc; border-radius: 14px; padding: 18px; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; background: #fff; width: 100%; }
+.new-cmp-btn:active { background: #f5f5f5; }
+.new-cmp-btn .plus { font-size: 20px; color: #888; }
+.new-cmp-btn span { font-size: 15px; color: #555; }
+
+/* =============== SHEET =============== */
+.overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,.4); z-index: 300; display: none; }
+.overlay.show { display: block; }
+#sheet { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 375px; background: #fff; border-radius: 20px 20px 0 0; z-index: 400; display: none; box-shadow: 0 -4px 20px rgba(0,0,0,.15); }
+#sheet.show { display: block; }
+.sheet-handle { width: 36px; height: 4px; background: #ddd; border-radius: 2px; margin: 12px auto 0; }
+.sheet-hdr { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid #f0f0f0; }
+.sheet-hdr h3 { font-size: 16px; font-weight: 700; }
+.sheet-hdr button { background: none; border: none; font-size: 20px; cursor: pointer; color: #888; }
+.sheet-body { display: flex; height: 300px; }
+.sleft { width: 140px; border-right: 1px solid #f0f0f0; overflow-y: auto; }
+.sleft-item { padding: 13px 14px; font-size: 14px; cursor: pointer; color: #666; }
+.sleft-item.on { background: #f5f5f5; font-weight: 700; color: #222; }
+.sright { flex: 1; overflow-y: auto; padding: 8px 0; }
+.sright-section { font-size: 11px; color: #bbb; font-weight: 700; padding: 10px 16px 4px; }
+.sright-item { padding: 12px 16px; font-size: 14px; color: #333; cursor: pointer; }
+.sright-item.enabled { color: #00bfa5; font-weight: 700; }
+.sright-item.enabled:active { background: #f0faf8; }
+.sright-item.dim { color: #ccc; cursor: default; }
+
+/* =============== DETAIL COMPARE =============== */
+#detail-compare { overflow-y: auto; padding-bottom: 90px; }
+.dc-sub { text-align: center; font-size: 13px; color: #aaa; padding: 8px 16px 12px; }
+.pgrid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; padding: 0 12px 12px; }
+.pslot { border: 1.5px solid #e0e0e0; border-radius: 10px; padding: 10px 6px; display: flex; flex-direction: column; align-items: center; cursor: pointer; position: relative; min-height: 128px; transition: border-color .2s, border-width .1s; }
+.pslot.sel { border-color: #00bfa5; border-width: 2px; }
+.pslot .ck { position: absolute; top: 6px; right: 6px; width: 20px; height: 20px; background: #00bfa5; border-radius: 50%; display: none; align-items: center; justify-content: center; color: #fff; font-size: 11px; font-weight: 700; }
+.pslot.sel .ck { display: flex; }
+.pslot .simg { width: 54px; height: 64px; border-radius: 6px; overflow: hidden; background: #eef5ff; margin-bottom: 5px; }
+.pslot .simg img { width: 100%; height: 100%; object-fit: cover; object-position: center 18%; }
+.pslot .sbrand { font-size: 10px; color: #999; text-align: center; }
+.pslot .sname { font-size: 10px; font-weight: 600; text-align: center; line-height: 1.3; margin: 2px 0; }
+.pslot .sstars { font-size: 10px; color: #f39c12; }
+.pslot .sdiscount { font-size: 10px; color: #ff3b30; }
+.pslot .sprice { font-size: 10px; font-weight: 700; }
+.pslot .plus-icon { font-size: 26px; color: #ccc; }
+.cmp-start { position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%); width: 343px; padding: 16px; background: #00bfa5; color: #fff; font-size: 16px; font-weight: 700; border: none; border-radius: 12px; cursor: pointer; opacity: .35; pointer-events: none; transition: opacity .2s; }
+.cmp-start.on { opacity: 1; pointer-events: all; }
+
+/* =============== RANKING =============== */
+#ranking { overflow-y: auto; padding-bottom: 60px; }
+.rf-row { display: flex; gap: 8px; padding: 12px 16px 8px; overflow-x: auto; scrollbar-width: none; }
+.rf-row::-webkit-scrollbar { display: none; }
+.rfpill { padding: 7px 16px; border-radius: 20px; border: 1px solid #ddd; font-size: 13px; cursor: pointer; white-space: nowrap; }
+.rfpill.on { background: #00bfa5; color: #fff; border-color: #00bfa5; font-weight: 700; }
+.rc-row { display: flex; align-items: center; gap: 6px; padding: 4px 16px 10px; overflow-x: auto; scrollbar-width: none; }
+.rc-row::-webkit-scrollbar { display: none; }
+.rcpill { padding: 6px 14px; border-radius: 6px; font-size: 13px; cursor: pointer; white-space: nowrap; background: #f0f0f0; color: #555; line-height: 1.4; }
+.rcpill.on { background: #222; color: #fff; }
+.rcpill-dd { background: #222; color: #fff; padding: 6px 14px; border-radius: 6px; font-size: 13px; cursor: pointer; line-height: 1.4; white-space: nowrap; }
+.concern-grid { display: grid; grid-template-columns: repeat(3,1fr); padding: 0 16px 6px; }
+.citem { font-size: 12px; color: #999; padding: 5px 0; cursor: pointer; }
+.citem.on { font-weight: 700; color: #222; }
+.rupdate { font-size: 11px; color: #bbb; padding: 2px 16px 10px; text-align: right; }
+.rank-item2 { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid #f5f5f5; cursor: pointer; }
+.rank-item2:active { background: #fafafa; }
+.r2num { font-size: 22px; font-weight: 900; width: 26px; flex-shrink: 0; }
+.r2num.n1 { color: #e8960c; } .r2num.n2 { color: #8a9ba8; } .r2num.n3 { color: #b8612a; }
+.r2thumb { width: 64px; height: 72px; border-radius: 8px; flex-shrink: 0; overflow: hidden; background: #eef5ff; }
+.r2thumb img { width: 100%; height: 100%; object-fit: cover; object-position: center 18%; }
+.r2info .r2brand { font-size: 11px; color: #999; }
+.r2info .r2name { font-size: 13px; font-weight: 700; line-height: 1.4; margin: 2px 0; }
+.r2info .r2stars { font-size: 12px; color: #f39c12; }
+.r2info .r2price { font-size: 13px; font-weight: 700; }
+.r2info .r2dc { color: #ff3b30; margin-right: 3px; }
+.r2info .r2pt { font-size: 11px; color: #e07b00; }
+
+/* =============== PRODUCT DETAIL =============== */
+#product-detail { overflow-y: auto; padding-bottom: 60px; }
+.pd-top { position: sticky; top: 0; display: flex; align-items: center; padding: 10px 14px; background: rgba(255,255,255,.95); z-index: 50; border-bottom: 1px solid #f0f0f0; }
+/* 헤더는 뒤로가기만 */
+.pd-hero-wrap { position: relative; flex-shrink: 0; }
+.pd-hero { width: 375px; height: 240px; overflow: hidden; }
+.pd-hero img { width: 375px; display: block; margin-top: -95px; }
+/* 궁합점수: 히어로 우측 하단 */
+.pd-compat { position: absolute; right: 10px; bottom: 14px; width: 54px; height: 54px; background: #fff; border-radius: 50%; box-shadow: 0 2px 10px rgba(0,0,0,.22); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 5; }
+.pd-compat .cscore { font-size: 17px; font-weight: 900; color: #00bfa5; line-height: 1; }
+.pd-compat .clabel { font-size: 8px; color: #888; }
+.pd-body { padding: 14px 16px 0; }
+.pd-brand { font-size: 12px; color: #888; margin-bottom: 4px; }
+.pd-name { font-size: 17px; font-weight: 800; line-height: 1.45; margin-bottom: 6px; }
+.pd-stars { font-size: 13px; color: #f39c12; margin-bottom: 14px; }
+.pd-orig { font-size: 12px; color: #ccc; text-decoration: line-through; }
+.pd-price { font-size: 24px; font-weight: 900; margin-bottom: 4px; }
+.pd-price .pdc { color: #ff3b30; font-size: 22px; margin-right: 5px; }
+.pd-ship { font-size: 12px; color: #00bfa5; margin-bottom: 14px; }
+.pd-div { height: 8px; background: #f5f5f5; margin: 12px -16px; }
+.pd-table { width: 100%; border-collapse: collapse; }
+.pd-table td { padding: 8px 0; font-size: 13px; vertical-align: top; line-height: 1.55; }
+.pd-table td:first-child { color: #999; width: 72px; }
+.pd-ship-link { color: #00bfa5; }
+/* 비교함 담기 툴팁 */
+.cmp-tooltip { display: flex; align-items: center; justify-content: space-between; background: #222; color: #fff; border-radius: 8px; padding: 10px 14px; margin: 16px 0 0; font-size: 13px; }
+.cmp-tooltip button { background: none; border: none; color: #aaa; font-size: 16px; cursor: pointer; padding: 0; line-height: 1; }
+/* 비교함 담기 / 즐겨찾기 - INLINE, NOT STICKY */
+.pd-actions-inline { display: flex; border: 1px solid #eee; border-radius: 10px; margin: 8px 0 0; overflow: hidden; }
+.pd-cmp-btn { flex: 1; padding: 13px 0; background: #fff; border: none; border-right: 1px solid #eee; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; color: #444; transition: background .2s, color .2s; }
+.pd-cmp-btn.added { background: #e0faf5; color: #00bfa5; }
+.pd-fav-btn { flex: 1; padding: 13px 0; background: #fff; border: none; font-size: 13px; color: #444; cursor: pointer; }
+.pd-sample-btn { display: block; width: calc(100% + 32px); margin: 14px -16px 0; padding: 13px 16px; background: #1565c0; color: #fff; font-size: 13px; font-weight: 700; border: none; cursor: pointer; text-align: center; }
+/* 하단 3버튼 - FIXED */
+.pd-bottom { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 375px; display: flex; z-index: 100; }
+.pd-heart { width: 58px; border: 1px solid #ddd; background: #fff; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 0 10px; }
+.pd-heart .hico { font-size: 20px; }
+.pd-heart .htxt { font-size: 9px; color: #aaa; margin-top: 1px; }
+.pd-cart { flex: 1; background: #fff; border: 1px solid #ddd; border-left: none; font-size: 14px; font-weight: 700; cursor: pointer; color: #222; }
+.pd-buy { flex: 1; background: #00bfa5; color: #fff; border: none; font-size: 14px; font-weight: 700; cursor: pointer; }
+
+/* =============== COMPARE PAGE =============== */
+#compare-page { overflow-y: auto; padding-bottom: 68px; }
+.cp-prods { display: flex; padding: 14px 12px; border-bottom: 2px solid #eee; gap: 6px; }
+.cp-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.cp-img { width: 74px; height: 84px; border-radius: 8px; overflow: hidden; background: #eef5ff; }
+.cp-img img { width: 100%; height: 100%; object-fit: cover; object-position: center 18%; }
+.cp-brand { font-size: 10px; color: #999; text-align: center; }
+.cp-name { font-size: 11px; font-weight: 700; text-align: center; line-height: 1.3; }
+.cp-buybtn { background: #00bfa5; color: #fff; border: none; border-radius: 6px; padding: 6px 0; font-size: 11px; font-weight: 600; cursor: pointer; width: 100%; }
+.cp-table { width: 100%; }
+.cp-row { display: flex; border-bottom: 1px solid #f0f0f0; }
+.cp-label { width: 76px; font-size: 11px; color: #777; padding: 12px 8px 12px 14px; background: #fafafa; font-weight: 600; flex-shrink: 0; display: flex; align-items: flex-start; padding-top: 14px; }
+.cp-cells { display: flex; flex: 1; }
+.cp-cell { flex: 1; padding: 12px 4px; font-size: 11px; text-align: center; line-height: 1.5; }
+.cp-stars { color: #f39c12; }
+.cp-dc { color: #ff3b30; font-weight: 700; }
+.cp-kw { color: #00bfa5; font-size: 10px; }
+.guide-btn { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 375px; padding: 17px; background: #00bfa5; color: #fff; font-size: 16px; font-weight: 700; border: none; cursor: pointer; }
+
+/* =============== DECISION GUIDE =============== */
+#decision-guide { overflow-y: auto; padding-bottom: 20px; }
+.dg-body { padding: 22px 16px; }
+.dg-sub { font-size: 12px; color: #bbb; margin-bottom: 6px; }
+.dg-title { font-size: 22px; font-weight: 900; line-height: 1.45; margin-bottom: 6px; }
+.dg-desc { font-size: 12px; color: #bbb; margin-bottom: 16px; }
+.skin-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 22px; }
+.skin-chip { padding: 6px 14px; border: 1px solid #ddd; border-radius: 20px; font-size: 12px; color: #666; }
+.dg-card { background: #ebfaf7; border-radius: 16px; padding: 20px; margin-bottom: 22px; }
+.dg-best { background: #00bfa5; color: #fff; font-size: 13px; font-weight: 700; padding: 7px 16px; border-radius: 20px; display: inline-flex; align-items: center; gap: 6px; margin-bottom: 14px; }
+.dg-prow { display: flex; gap: 14px; margin-bottom: 14px; align-items: flex-start; }
+.dg-pimg { width: 72px; height: 88px; border-radius: 8px; overflow: hidden; background: #c8eae3; flex-shrink: 0; }
+.dg-pimg img { width: 100%; height: 100%; object-fit: cover; object-position: center 18%; }
+.dg-pbrand { font-size: 11px; color: #5a9e95; margin-bottom: 3px; }
+.dg-pname { font-size: 15px; font-weight: 800; line-height: 1.35; }
+.dg-warn { background: #e0e0e0; color: #888; font-size: 11px; padding: 4px 10px; border-radius: 12px; display: inline-block; margin-top: 6px; }
+.dg-score { display: flex; align-items: center; gap: 10px; }
+.dg-score-label { font-size: 12px; color: #5a9e95; white-space: nowrap; }
+.dg-bar { flex: 1; height: 6px; background: #b2dfdb; border-radius: 3px; overflow: hidden; }
+.dg-bar-fill { height: 100%; background: #00bfa5; border-radius: 3px; }
+.dg-score-num { font-size: 17px; font-weight: 900; color: #00bfa5; }
+.dg-reasons { list-style: none; margin-top: 18px; }
+.dg-reasons li { display: flex; gap: 10px; font-size: 13px; color: #444; margin-bottom: 10px; line-height: 1.55; }
+.dg-reasons .n { background: #00bfa5; color: #fff; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+.dg-detail { display: block; width: 100%; padding: 16px; background: #00bfa5; color: #fff; font-size: 16px; font-weight: 700; border: none; border-radius: 12px; cursor: pointer; margin-bottom: 12px; text-align: center; }
+.dg-back { display: block; width: 100%; padding: 15px; background: #fff; color: #555; font-size: 15px; font-weight: 600; border: 1.5px solid #ddd; border-radius: 12px; cursor: pointer; text-align: center; }
+.dg-note { font-size: 11px; color: #ccc; text-align: center; margin-top: 14px; line-height: 1.6; }
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- OVERLAY -->
+<div class="overlay" id="overlay" onclick="closeSheet()"></div>
+
+<!-- TOASTS -->
+<div class="toast" id="t1">
+  <span>상품을 담았어요. 비교함 탭에서 확인할 수 있어요</span>
+  <button class="toast-link" onclick="goDetailCmp()">비교함 보기</button>
+</div>
+<div class="toast2" id="t2">이미 존재하는 비교함입니다.</div>
+
+<!-- ===== HOME ===== -->
+<div class="screen active" id="home">
+  <div class="home-topbar">
+    <div class="searchbar">수분지 샤샤집는 #미리준비 #수분케어</div>
+    <svg width="22" height="22" fill="none" stroke="#333" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <svg width="22" height="22" fill="none" stroke="#333" stroke-width="2" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+  </div>
+  <div class="home-tabs">
+    <div class="htab on">홈</div>
+    <div class="htab" onclick="go('ranking')">랭킹</div>
+    <div class="htab">어워드</div>
+  </div>
+  <div class="banner">
+    <div class="banner-txt">
+      <div class="badge">최대 86% 할인</div>
+      <h2>미리 준비하는<br>여름뷰티<br>얼리 썸머 페스타</h2>
+    </div>
+    <div class="banner-bottles">
+      <div class="btl" style="width:38px;height:82px;"></div>
+      <div class="btl" style="width:40px;height:102px;"></div>
+      <div class="btl" style="width:36px;height:76px;"></div>
+    </div>
+    <div class="banner-page">3/6</div>
+  </div>
+  <div class="sec-hdr"><span>카테고리별 판매 BEST</span><small>2026.06.08 기준</small></div>
+  <div class="cat-row">
+    <div class="cpill on">전체</div>
+    <div class="cpill">스킨케어</div>
+    <div class="cpill">클렌징/필링</div>
+    <div class="cpill">마스크팩</div>
+    <div class="cpill">선케어</div>
+  </div>
+  <div class="rank-list">
+    <div class="ri" onclick="openDetail(0)">
+      <div class="rnum g">1</div>
+      <div class="rthumb"><img id="himg0" src=""></div>
+      <div class="rinfo">
+        <div class="rbrand">에스네이처</div>
+        <div class="rname">아쿠아 오아시스 토너 300ml 더블기획 (+화장솜)<span class="new-tag">NEW</span></div>
+        <div class="rstars">★ 4.74 <span style="color:#bbb;">(27,133)</span></div>
+        <div class="rprice"><span class="dc">63%</span> 19,500원</div>
+      </div>
+    </div>
+    <div class="ri" onclick="openDetail(1)">
+      <div class="rnum s">2</div>
+      <div class="rthumb"><img id="himg1" src=""></div>
+      <div class="rinfo">
+        <div class="rbrand">아브카</div>
+        <div class="rname">저분자 히알루론산 대용량 모공 토너<span class="new-tag">NEW</span></div>
+        <div class="rstars">★ 4.40 <span style="color:#bbb;">(170)</span></div>
+        <div class="rprice"><span class="dc">35%</span> 16,800원</div>
+      </div>
+    </div>
+    <div class="ri" onclick="openDetail(2)">
+      <div class="rnum b">3</div>
+      <div class="rthumb"><img id="himg2" src=""></div>
+      <div class="rinfo">
+        <div class="rbrand">웰라쥬</div>
+        <div class="rname">리얼 히알루로닉 블루100토너 기획<span class="new-tag">NEW</span></div>
+        <div class="rstars">★ 4.67 <span style="color:#bbb;">(32,778)</span></div>
+        <div class="rprice"><span class="dc">38%</span> 32,400원</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== COMPARE LIST ===== -->
+<div class="screen" id="compare-list">
+  <div class="cl-wrap">
+    <h2>내 비교함</h2>
+    <div id="clist-cards"></div>
+    <button class="new-cmp-btn" onclick="openSheet()">
+      <span class="plus">+</span>
+      <span>새 비교함 만들기</span>
+    </button>
+  </div>
+</div>
+
+<!-- ===== SHEET ===== -->
+<div id="sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-hdr">
+    <h3>카테고리 선택</h3>
+    <button onclick="closeSheet()">✕</button>
+  </div>
+  <div class="sheet-body">
+    <div class="sleft">
+      <div class="sleft-item on">🤍 스킨케어</div>
+      <div class="sleft-item">🫧 클렌징/필링</div>
+      <div class="sleft-item">🎭 마스크/팩</div>
+      <div class="sleft-item">☀️ 선케어</div>
+      <div class="sleft-item">💄 베이스메이크업</div>
+      <div class="sleft-item">👁 아이메이크업</div>
+      <div class="sleft-item">💋 립메이크업</div>
+      <div class="sleft-item">🤍 바디</div>
+    </div>
+    <div class="sright">
+      <div class="sright-section">스킨케어</div>
+      <div class="sright-item enabled" onclick="selectCat()">스킨/토너</div>
+      <div class="sright-item dim">에센스/세럼/앰플</div>
+      <div class="sright-item dim">크림</div>
+      <div class="sright-item dim">로션/에멀전</div>
+      <div class="sright-item dim">아이크림</div>
+      <div class="sright-item dim">미스트/픽서</div>
+      <div class="sright-item dim">오일/밤</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DETAIL COMPARE ===== -->
+<div class="screen" id="detail-compare">
+  <div class="hdr">
+    <button class="back" onclick="goBack()">←</button>
+    <h1>스킨/토너 비교함</h1>
+    <div style="width:32px;"></div>
+  </div>
+  <div class="dc-sub">비교할 제품을 최대 3개 선택해주세요.</div>
+  <div class="pgrid" id="pgrid"></div>
+  <button class="cmp-start" id="cmp-start" onclick="startCmp()">비교 시작하기</button>
+</div>
+
+<!-- ===== RANKING ===== -->
+<div class="screen" id="ranking">
+  <div class="hdr">
+    <button class="back" onclick="goBack()">←</button>
+    <h1>랭킹</h1>
+    <div style="display:flex;gap:10px;">
+      <svg width="22" height="22" fill="none" stroke="#222" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <svg width="22" height="22" fill="none" stroke="#222" stroke-width="2" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+    </div>
+  </div>
+  <div class="rf-row">
+    <div class="rfpill">급상승</div>
+    <div class="rfpill on">카테고리별</div>
+    <div class="rfpill">피부별</div>
+    <div class="rfpill">연령대별</div>
+  </div>
+  <div class="rc-row">
+    <div class="rcpill-dd">스킨케어 ▾</div>
+    <div class="rcpill">전체</div>
+    <div class="rcpill on">스킨/토너</div>
+    <div class="rcpill">로션/에멀전</div>
+    <div class="rcpill">에센스</div>
+  </div>
+  <div class="concern-grid">
+    <div class="citem on">전체</div><div class="citem">수분</div><div class="citem">진정</div>
+    <div class="citem">보습</div><div class="citem">모공</div><div class="citem">브라이트닝</div>
+    <div class="citem">안티에이징</div><div class="citem">트러블</div><div class="citem">각질</div>
+  </div>
+  <div class="rupdate">⊙ 2026.06.04 업데이트</div>
+  <div class="rank-item2" onclick="openDetail(0)">
+    <div class="r2num n1">1</div>
+    <div class="r2thumb"><img id="rimg0" src=""></div>
+    <div class="r2info">
+      <div class="r2brand">에스네이처</div>
+      <div class="r2name">아쿠아 오아시스 토너</div>
+      <div class="r2stars">★ 4.74 <span style="color:#bbb;">(27,147)</span></div>
+      <div class="r2price"><span class="r2dc">63%</span> 19,500원 <span style="color:#bbb;font-size:11px;">/300ml+300ml</span></div>
+      <div class="r2pt">ⓟ 최대 3,050P</div>
+    </div>
+  </div>
+  <div class="rank-item2" onclick="openDetail(1)">
+    <div class="r2num n2">2</div>
+    <div class="r2thumb"><img id="rimg1" src=""></div>
+    <div class="r2info">
+      <div class="r2brand">아브카</div>
+      <div class="r2name">저분자 히알루론산 대용량 모공 토너</div>
+      <div class="r2stars">★ 4.40 <span style="color:#bbb;">(170)</span></div>
+      <div class="r2price"><span class="r2dc">35%</span> 16,800원 <span style="color:#bbb;font-size:11px;">/1000ml+1000ml</span></div>
+      <div class="r2pt">ⓟ 최대 1,940P</div>
+    </div>
+  </div>
+  <div class="rank-item2" onclick="openDetail(2)">
+    <div class="r2num n3">3</div>
+    <div class="r2thumb"><img id="rimg2" src=""></div>
+    <div class="r2info">
+      <div class="r2brand">웰라쥬</div>
+      <div class="r2name">리얼 히알루로닉 블루100토너 기획</div>
+      <div class="r2stars">★ 4.67 <span style="color:#bbb;">(32,778)</span></div>
+      <div class="r2price"><span class="r2dc">38%</span> 32,400원</div>
+      <div class="r2pt">ⓟ 최대 3,050P</div>
+    </div>
+  </div>
+  <div class="rank-item2" onclick="openDetail(0)">
+    <div class="r2num" style="color:#888;">4</div>
+    <div class="r2thumb" style="background:#ece6ff;"></div>
+    <div class="r2info">
+      <div class="r2brand">토리든</div>
+      <div class="r2name">다이브인 저분자 히알루론산 수딩토너</div>
+      <div class="r2stars">★ 4.68 <span style="color:#bbb;">(26,036)</span></div>
+      <div class="r2price"><span class="r2dc">63%</span> 19,500원</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PRODUCT DETAIL ===== -->
+<div class="screen" id="product-detail">
+  <div class="pd-top">
+    <button class="back" onclick="goBack()">←</button>
+  </div>
+  <div id="pd-content"></div>
+  <div class="pd-bottom">
+    <button class="pd-heart"><div class="hico">♡</div><div class="htxt">찜하기</div></button>
+    <button class="pd-cart">장바구니 담기</button>
+    <button class="pd-buy">결제하기</button>
+  </div>
+</div>
+
+<!-- ===== COMPARE PAGE ===== -->
+<div class="screen" id="compare-page">
+  <div class="hdr">
+    <button class="back" onclick="goBack()">←</button>
+    <h1>제품 비교하기</h1>
+    <div style="width:32px;"></div>
+  </div>
+  <div id="cp-content"></div>
+  <button class="guide-btn" onclick="go('decision-guide')">의사결정 가이드 보기</button>
+</div>
+
+<!-- ===== DECISION GUIDE ===== -->
+<div class="screen" id="decision-guide">
+  <div class="hdr">
+    <button class="back" onclick="goBack()">←</button>
+    <h1>의사결정 가이드</h1>
+    <div style="width:32px;"></div>
+  </div>
+  <div class="dg-body">
+    <div class="dg-sub">내 피부 기준 추천</div>
+    <div class="dg-title">3가지 제품 중<br>먼저 확인해볼 제품이에요.</div>
+    <div class="dg-desc">궁합 점수·주의성분·판매 여부를 기준으로 분석했어요</div>
+    <div class="skin-chips">
+      <div class="skin-chip">건성 피부</div>
+      <div class="skin-chip">민감성 피부</div>
+      <div class="skin-chip">아토피 피부</div>
+    </div>
+    <div class="dg-card">
+      <div class="dg-best">✓ 최적 추천</div>
+      <div class="dg-prow">
+        <div class="dg-pimg"><img id="dgimg" src=""></div>
+        <div>
+          <div class="dg-pbrand">[에스네이처]</div>
+          <div class="dg-pname">아쿠아 오아시스 토너 [300ml]</div>
+          <div class="dg-warn">주의성분 없음</div>
+        </div>
+      </div>
+      <div class="dg-score">
+        <div class="dg-score-label">내 피부 궁합 점수</div>
+        <div class="dg-bar"><div class="dg-bar-fill" style="width:88%;"></div></div>
+        <div class="dg-score-num">88점</div>
+      </div>
+    </div>
+    <ul class="dg-reasons">
+      <li><div class="n">1</div><div>민감하고 예민한 피부에도 순한 사용감을 제공해요</div></li>
+      <li><div class="n">2</div><div>무향에 가까워 민감한 피부에도 편안한 사용감을 제공해요</div></li>
+      <li><div class="n">3</div><div>빠른 흡수력과 끈적임 없는 마무리감으로 데일리 활용도 높아요</div></li>
+    </ul>
+    <button class="dg-detail" onclick="openDetail(0)">제품 상세보기</button>
+    <button class="dg-back" onclick="goBack()">비교 결과 다시보기</button>
+    <div class="dg-note">추천 결과는 내 피부 정보·궁합 점수·성분 데이터 기반으로 제공됩니다<br>광고·협찬과는 무관합니다</div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bnav" id="bnav">
+  <button id="bn-home" class="on" onclick="go('home');setNav('bn-home')">
+    <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" stroke="none" fill="currentColor" opacity="0"/><path d="M3 9.5l9-7 9 7V21a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z"/><path d="M9 22V13h6v9"/></svg>
+    홈
+  </button>
+  <button id="bn-cat" onclick="setNav('bn-cat')">
+    <svg viewBox="0 0 24 24"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+    카테고리
+  </button>
+  <button id="bn-benefit" onclick="setNav('bn-benefit')">
+    <svg viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M12 8H8.5a2.5 2.5 0 010-5C11 3 12 8 12 8zM12 8h3.5a2.5 2.5 0 000-5C13 3 12 8 12 8z"/><path d="M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/></svg>
+    혜택
+  </button>
+  <button id="bn-shop" onclick="setNav('bn-shop')">
+    <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+    쇼핑
+  </button>
+  <button id="bn-cmp" onclick="go('compare-list');setNav('bn-cmp')">
+    <svg viewBox="0 0 24 24"><path d="M7 16V4m0 0L4 7m3-3l3 3"/><path d="M17 8v12m0 0l3-3m-3 3l-3-3"/></svg>
+    비교함
+  </button>
+  <button id="bn-my" onclick="setNav('bn-my')">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+    마이
+  </button>
+</nav>
+</div>
+
+<script>
+// ===== PRODUCT DATA =====
+const IMGS = [
+  '와이어프레임/Screen E · 상세페이지1.png',
+  '와이어프레임/Screen E · 상세페이지2.png',
+  '와이어프레임/Screen E · 상세페이지3.png'
+];
+const PD = [
+  { id:0, brand:'에스네이처', name:'아쿠아 오아시스 토너 300ml 더블기획 (+화장솜)', stars:4.74, rv:27146, orig:50000, disc:63, price:19500, vol:'300ml+300ml', rank:'스킨/토너 1위', award:'2026 글로벌 픽·스킨케어 부문·수분 / 스킨/토너 1위', compat:88, kw:['#촉촉/수분','#흡수력','#트러블'] },
+  { id:1, brand:'아브카',    name:'저분자 히알루론산 대용량 모공 토너 (1000ml+1000ml)', stars:4.40, rv:170,   orig:26000, disc:35, price:16800, vol:'1000ml+1000ml', rank:'스킨/토너 2위', award:'2025 하반기 라이징 트렌드·스킨케어 부문·수분', compat:82, kw:['#촉촉/수분','#흡수력','#제형'] },
+  { id:2, brand:'웰라쥬',   name:'리얼 히알루로닉 블루100토너 기획', stars:4.67, rv:32778, orig:52000, disc:38, price:32400, vol:'500ml', rank:'스킨/토너 3위', award:'2026 상반기 효능/효과·스킨케어 부문·수분', compat:86, kw:['#촉촉/수분','#건조','#제형'] }
+];
+
+// ===== STATE =====
+let hist = [];
+let curScreen = 'home';
+let skinTonerExists = false;
+let inCompare = {};    // pid -> bool: added to compare list
+let selected = {};     // pid -> bool: selected for comparison
+let curPid = 0;
+let cmpIds = [];
+let tooltipDismissed = false;
+
+// ===== INIT =====
+function setImgs() {
+  IMGS.forEach((src, i) => {
+    ['himg','rimg'].forEach(p => {
+      const el = document.getElementById(p + i);
+      if (el) el.src = src;
+    });
+  });
+  const dg = document.getElementById('dgimg');
+  if (dg) dg.src = IMGS[0];
+}
+
+// ===== NAVIGATION =====
+function go(id) {
+  const prev = document.querySelector('.screen.active');
+  if (prev && prev.id !== id) {
+    prev.classList.remove('active');
+    hist.push(prev.id);
+  }
+  curScreen = id;
+  document.getElementById(id).classList.add('active');
+  const noNav = ['product-detail','detail-compare','ranking','compare-page','decision-guide'];
+  document.getElementById('bnav').style.display = noNav.includes(id) ? 'none' : 'flex';
+  if (id === 'compare-list')  renderCList();
+  if (id === 'detail-compare') renderDCmp();
+  if (id === 'compare-page')  renderCPage();
+  if (id === 'product-detail') renderPD(curPid);
+}
+
+function goBack() {
+  if (!hist.length) return;
+  const prev = hist.pop();
+  document.querySelector('.screen.active').classList.remove('active');
+  curScreen = prev;
+  document.getElementById(prev).classList.add('active');
+  const noNav = ['product-detail','detail-compare','ranking','compare-page','decision-guide'];
+  document.getElementById('bnav').style.display = noNav.includes(prev) ? 'none' : 'flex';
+  if (prev === 'compare-list')  renderCList();
+  if (prev === 'detail-compare') renderDCmp();
+  if (prev === 'compare-page')  renderCPage();
+  if (prev === 'product-detail') renderPD(curPid);
+}
+
+function setNav(id) {
+  document.querySelectorAll('.bnav button').forEach(b => b.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+}
+
+// ===== SHEET =====
+function openSheet() {
+  document.getElementById('sheet').classList.add('show');
+  document.getElementById('overlay').classList.add('show');
+}
+function closeSheet() {
+  document.getElementById('sheet').classList.remove('show');
+  document.getElementById('overlay').classList.remove('show');
+}
+function selectCat() {
+  if (skinTonerExists) {
+    closeSheet();
+    showT2();
+  } else {
+    skinTonerExists = true;
+    closeSheet();
+    renderCList();
+  }
+}
+
+// ===== COMPARE LIST =====
+function renderCList() {
+  const area = document.getElementById('clist-cards');
+  area.innerHTML = '';
+  if (!skinTonerExists) return;
+  const ids = Object.keys(inCompare).filter(k => inCompare[k]).map(Number);
+  const card = document.createElement('div');
+  card.className = 'ccard';
+  card.onclick = () => go('detail-compare');
+  let imgs = ids.length === 0
+    ? '<span style="font-size:12px;color:#bbb;">제품을 추가해주세요</span>'
+    : ids.slice(0,3).map(id => `<div class="cthumb"><img src="${IMGS[id]}"></div>`).join('') + (ids.length > 0 ? '<span style="color:#bbb;font-size:18px;margin-left:4px;">···</span>' : '');
+  card.innerHTML = `<div class="ccard-title">스킨/토너 비교함 (${ids.length})</div><div class="ccard-imgs">${imgs}</div>`;
+  area.appendChild(card);
+}
+
+// ===== DETAIL COMPARE =====
+function renderDCmp() {
+  const grid = document.getElementById('pgrid');
+  grid.innerHTML = '';
+  const added = PD.filter(p => inCompare[p.id]);
+  added.forEach(p => {
+    const isSel = !!selected[p.id];
+    const slot = document.createElement('div');
+    slot.className = 'pslot' + (isSel ? ' sel' : '');
+    slot.onclick = () => toggleSel(p.id);
+    slot.innerHTML = `
+      <div class="ck">✓</div>
+      <div class="simg"><img src="${IMGS[p.id]}"></div>
+      <div class="sbrand">[${p.brand}]</div>
+      <div class="sname">${p.name.substring(0,16)}</div>
+      <div class="sstars">★ ${p.stars}</div>
+      <div class="sdiscount">${p.disc}%</div>
+      <div class="sprice">${p.price.toLocaleString()}원</div>
+    `;
+    grid.appendChild(slot);
+  });
+  // 항상 + 슬롯 노출 (무제한 추가 가능)
+  const plusSlot = document.createElement('div');
+  plusSlot.className = 'pslot';
+  plusSlot.onclick = () => go('ranking');
+  plusSlot.innerHTML = `<div class="plus-icon">+</div>`;
+  grid.appendChild(plusSlot);
+  updateCmpBtn();
+}
+
+function toggleSel(pid) {
+  // 선택 수 제한 없음
+  selected[pid] = !selected[pid];
+  renderDCmp();
+}
+
+function updateCmpBtn() {
+  const cnt = Object.values(selected).filter(Boolean).length;
+  const btn = document.getElementById('cmp-start');
+  btn.classList.toggle('on', cnt >= 2);
+}
+
+function startCmp() {
+  cmpIds = Object.keys(selected).filter(k => selected[k]).map(Number);
+  if (cmpIds.length < 2) return;
+  go('compare-page');
+}
+
+// ===== PRODUCT DETAIL =====
+function openDetail(pid) {
+  curPid = pid;
+  go('product-detail');
+}
+
+function renderPD(pid) {
+  const p = PD[pid];
+  const added = !!inCompare[pid];
+  const showTooltip = !tooltipDismissed && !added;
+  document.getElementById('pd-content').innerHTML = `
+    <div class="pd-hero-wrap">
+      <div class="pd-hero"><img src="${IMGS[pid]}" alt=""></div>
+      <div class="pd-compat">
+        <div class="cscore">${p.compat}</div>
+        <div class="clabel">궁합점수</div>
+      </div>
+    </div>
+    <div class="pd-body">
+      <div class="pd-brand">${p.brand} <span style="color:#ccc;">›</span></div>
+      <div class="pd-name">${p.name}</div>
+      <div class="pd-stars">★ ${p.stars} <span style="color:#aaa;">(${p.rv.toLocaleString()})</span> <span style="color:#00bfa5;font-size:12px;">성분 구성 보기</span></div>
+      <div class="pd-orig">${p.orig.toLocaleString()}원</div>
+      <div class="pd-price"><span class="pdc">${p.disc}%</span>${p.price.toLocaleString()}원</div>
+      <div class="pd-ship">🚚 무료배송</div>
+      <div class="pd-div"></div>
+      <table class="pd-table">
+        <tr><td>용량</td><td>${p.vol}</td></tr>
+        <tr><td>랭킹</td><td>${p.rank}</td></tr>
+        <tr><td>수상</td><td>${p.award}</td></tr>
+        <tr><td>배송비</td><td><span class="pd-ship-link">무료배송</span> CJ대한통운<br><span style="color:#aaa;">제주, 도서산간지역 3,000원 추가</span></td></tr>
+        <tr><td>정품인증</td><td>화해 모든 상품은 100% 정품입니다</td></tr>
+      </table>
+      <div class="pd-div"></div>
+      ${showTooltip ? `<div class="cmp-tooltip"><span>비교함에 담아보세요</span><button onclick="dismissTooltip()">✕</button></div>` : ''}
+      <div class="pd-actions-inline">
+        <button class="pd-cmp-btn${added ? ' added' : ''}" onclick="toggleCmpAdd()">
+          ${added ? '✓ 비교함 담김' : '+ 비교함 담기'}
+        </button>
+        <button class="pd-fav-btn">☆ 즐겨찾기</button>
+      </div>
+      <button class="pd-sample-btn" onclick="go('ranking')">스킨/토너의 다른 샘플 6개 보기</button>
+      <div style="height:70px;"></div>
+    </div>
+  `;
+}
+
+function toggleCmpAdd() {
+  const pid = curPid;
+  inCompare[pid] = !inCompare[pid];
+  // 자동 선택 없음 — 비교함에서 직접 선택
+  renderPD(pid);
+  if (inCompare[pid]) showT1();
+  else hideT1();
+}
+
+function dismissTooltip() {
+  tooltipDismissed = true;
+  renderPD(curPid);
+}
+
+// ===== COMPARE PAGE =====
+function renderCPage() {
+  const ids = cmpIds.length >= 2 ? cmpIds : [0,1,2];
+  const prods = ids.map(i => PD[i]);
+  const headerHTML = prods.map(p => `
+    <div class="cp-col">
+      <div class="cp-img"><img src="${IMGS[p.id]}"></div>
+      <div class="cp-brand">[${p.brand}]</div>
+      <div class="cp-name">${p.name.substring(0,14)}</div>
+      <button class="cp-buybtn">구매하기</button>
+    </div>
+  `).join('');
+  const rows = [
+    { label:'평점',      vals: prods.map(p=>`<div class="cp-stars">★ ${p.stars}</div><div style="color:#bbb;font-size:10px;">(${p.rv.toLocaleString()})</div>`) },
+    { label:'가격',      vals: prods.map(p=>`<div class="cp-dc">${p.disc}%</div><div>${p.price.toLocaleString()}원</div><div style="color:#bbb;font-size:10px;">${p.vol}</div>`) },
+    { label:'주요키워드', vals: prods.map(p=>`<div class="cp-kw">${p.kw.join('<br>')}</div>`) },
+    { label:'랭킹',      vals: prods.map(p=>`<div style="color:#888;font-size:11px;">${p.rank}</div>`) },
+    { label:'20가지 주의성분', vals: prods.map(()=>'<div>0</div>') },
+    { label:'알레르기 유발', vals: prods.map(()=>'<div>0</div>') },
+    { label:'지성피부',  vals: prods.map(()=>'<span style="color:#00bfa5;">■ 1</span><br><span style="color:#ff4757;">■ 0</span>') },
+  ].map(r => `
+    <div class="cp-row">
+      <div class="cp-label">${r.label}</div>
+      <div class="cp-cells">${r.vals.map(v=>`<div class="cp-cell">${v}</div>`).join('')}</div>
+    </div>
+  `).join('');
+  document.getElementById('cp-content').innerHTML = `
+    <div class="cp-prods">${headerHTML}</div>
+    <div class="cp-table">${rows}</div>
+    <div style="height:68px;"></div>
+  `;
+}
+
+// ===== TOASTS =====
+let t1Timer, t2Timer;
+function showT1() {
+  const t = document.getElementById('t1');
+  t.classList.add('show');
+  clearTimeout(t1Timer);
+  t1Timer = setTimeout(() => t.classList.remove('show'), 4000);
+}
+function hideT1() { document.getElementById('t1').classList.remove('show'); }
+function showT2() {
+  const t = document.getElementById('t2');
+  t.classList.add('show');
+  clearTimeout(t2Timer);
+  t2Timer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+function goDetailCmp() {
+  hideT1();
+  go('detail-compare');
+}
+
+// ===== BOOT =====
+setImgs();
+go('home');
+setNav('bn-home');
+</script>
+</body>
+</html>
